@@ -1,0 +1,52 @@
+groups:
+- name: elasticsearchStatsAlert
+  rules:
+  - alert: 主分片不可用
+    expr: elasticsearch_cluster_health_status{color="red"}==1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "处理：通常时由于某个索引的住分片为分片unassigned，只要找出这个索引的分片，手工分配即可"
+      description: "Instance {{ $labels.instance }}: not all primary and replica shards are allocated in elasticsearch cluster {{ $labels.cluster }}."
+  - alert: 所有主分片可用，副本分片异常
+    expr: elasticsearch_cluster_health_status{color="yellow"}==1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "处理：过滤查看所有未分配索引的方式， curl -s 127.0.0.1:9200/_cat/shards 通过reroute的allocate分配"
+      description: "Instance {{ $labels.instance }}: not all primary and replica shards are allocated in elasticsearch cluster {{ $labels.cluster }}."
+  - alert: 内存超过百分之80
+    expr: elasticsearch_jvm_memory_used_bytes{area="heap"} / elasticsearch_jvm_memory_max_bytes{area="heap"} > 0.8
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "处理：es主机查看内存使用点"
+      description: "The heap in {{ $labels.instance }} is over 80% for 15m."
+  - alert: es集群宕机
+    expr: elasticsearch_cluster_health_up !=1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "处理：查看es日志宕机点报错信息"
+      description: "ElasticSearch node: {{ $labels.instance }} last scrape of the ElasticSearch cluster health failed"
+  - alert: 集群存活主机剩余一
+    expr: elasticsearch_cluster_health_number_of_nodes < 1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "处理：查看其他两台es宕机原因"
+      description: "lasticSearch running on less than 1 nodes(total 14)"
+  - alert: es集群健康检查超时
+    expr: elasticsearch_cluster_health_timed_out>0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "解决：调用 http://localhost:9200/_cluster/health?pretty 查看集群status参数状态找到red节点"
+      description: "ElasticSearch node {{ $labels.instance }}: Number of cluster health checks timed out > 0 and has a value of {{ $value }}"
+

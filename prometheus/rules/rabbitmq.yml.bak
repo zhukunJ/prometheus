@@ -1,0 +1,11 @@
+groups:
+- name: RabbitmqStatsAlert
+  rules:
+  - alert: rabbitmq_sockets_available
+    expr: rabbitmq_sockets_available < 10240
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }}- {{ $labels.cluster }}: rabbitmq_sockets_available status error"
+      description: "Instance {{ $labels.instance }}- {{ $labels.cluster }}: rabbitmq_sockets_available status error"
