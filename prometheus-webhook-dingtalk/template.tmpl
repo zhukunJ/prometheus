@@ -19,13 +19,15 @@
 
 **触发时间:** {{ dateInZone "2006.01.02 15:04:05" (.StartsAt) "Asia/Shanghai" }}
 
-**事件信息:** 
+**现在状态:** 未解决! [打叉]
+
+**详情信息:** 
 {{ range .Annotations.SortedPairs }} - {{ .Name }}: {{ .Value | markdown | html }}
 
 
 {{ end }}
 
-**事件标签:**
+**报警内容:**
 {{ range .Labels.SortedPairs }}{{ if and (ne (.Name) "severity") (ne (.Name) "summary") (ne (.Name) "team") }} - {{ .Name }}: {{ .Value | markdown | html }}
 {{ end }}{{ end }}
 {{ end }}
@@ -40,13 +42,15 @@
 
 **结束时间:** {{ dateInZone "2006.01.02 15:04:05" (.EndsAt) "Asia/Shanghai" }}
 
+**现在状态:** 已恢复! [对勾]
+
 **事件信息:**
 {{ range .Annotations.SortedPairs }} - {{ .Name }}: {{ .Value | markdown | html }}
 
 
 {{ end }}
 
-**事件标签:**
+**详情信息:**
 {{ range .Labels.SortedPairs }}{{ if and (ne (.Name) "severity") (ne (.Name) "summary") (ne (.Name) "team") }} - {{ .Name }}: {{ .Value | markdown | html }}
 {{ end }}{{ end }}
 {{ end }}
