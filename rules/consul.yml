@@ -1,0 +1,27 @@
+groups:
+- name: ConsulStatsAlert
+  rules:
+  - alert: consul_health_service_status is error
+    expr: sum by (service_name, status) (consul_health_service_status{status!="passing"})>0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: consul_health_service_status is error on {{ $labels.service_name }}
+      description: consul_health_service_status is error on {{ $labels.service_name }}
+  - alert: consul_health_node_status is error
+    expr: consul_health_node_status{status!='passing'}>0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: consul_health_node_status is error on {{ $labels.node }}
+      description: consul_health_service_status is error on {{ $labels.node }}
+  - alert: The number of consul_up < 3 
+    expr: consul_up<3
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: The number of consul_up < 3
+      description: The number of consul_up < 3

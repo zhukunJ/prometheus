@@ -1,0 +1,115 @@
+groups:
+- name: kafkaex-StatsAlert
+  rules:
+  - alert: kafka队列积压大于100
+    expr: sum (increase (kafka_consumer_group_lag[1m])) by (group,partition,topic) > 100
+    for: 30s
+    labels:
+      severity: 严重
+    annotations:
+      summary: "topic名称：{{ $labels.topic }}, 分组名称: {{ $labels.group }}"
+      description: "topic名称：{{ $labels.topic }}, 分组名称: {{ $labels.group }}"
+- name: kafka_server
+  rules:
+  - alert: UnderReplicatedPartitions复制不足的分区数
+    expr: avg_over_time(kafka_server_replicamanager_underreplicatedpartitions{name="UnderReplicatedPartitions",}[1m]) >= 1
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.app }} app UnderReplicatedPartitions"
+      description: "app: {{ $labels.app }} ,Instance: {{ $labels.instance }} 复制不足的分区数: {{ $value }}"
+  - alert: OfflinePartitionsCount没有活动领导者的分区数
+    expr: avg_over_time(kafka_controller_kafkacontroller_offlinepartitionscount{name="OfflinePartitionsCount",}[1m]) > 0
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.app }} app OfflinePartitionsCount"
+      description: "app: {{ $labels.app }}, OfflinePartitionsCount没有活动领导者的分区数, count：{{ $value }}"
+  - alert: RequestHandlerAvgIdlePercent请求处理程序线程空闲的平均时间百分比
+    for: 1m
+    labels:
+      job: kafka
+    expr: avg_over_time(kafka_server_kafkarequesthandlerpool_requesthandleravgidlepercent_count{name="RequestHandlerAvgIdlePercent",}[1m]) <= 0.3
+    annotations:
+      summary: "{{ $labels.app }} 请求处理程序线程空闲的平均时间百分比"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}，请求处理程序线程空闲百分比低于30%， 当前值为：{{ $value }}"
+  - alert: NetworkProcessorAvgIdlePercent网络处理器线程空闲的平均时间百分比
+    expr: avg_over_time(kafka_network_socketserver_networkprocessoravgidlepercent{name="NetworkProcessorAvgIdlePercent",}[1m]) <= 0.3
+    annotations:
+      summary: "{{ $labels.app }} 网络处理器线程空闲的平均时间百分比"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}，网络处理器线程空闲的平均时间百分比30%， 当前值为：{{ $value }}"
+  - alert: connection_count 已建立的连接数
+    for: 1m
+    labels:
+      job: kafka
+    expr: sum(avg_over_time(kafka_network_acceptor_acceptorblockedpercent_count{listener="PLAINTEXT",}[1m])) by (instance,app) > 3000
+    annotations:
+      summary: "{{ $labels.app }} 已建立的连接数"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}，已建立的连接数大于3000， 当前值为：{{ $value }}"
+  - alert: connection_creation 每秒新建连接数
+    expr: sum(avg_over_time(kafka_server_socket_server_metrics_connection_creation_rate[1m])) by (instance)  > 100
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.app }} 每秒新建连接数"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}，每秒新建连接数大于100， 当前值为：{{ $value }}"
+  - alert: RequestQueueTimeMs 请求在请求队列中等待的时间
+    expr: avg_over_time(kafka_network_requestmetrics_throttletimems{name="RequestQueueTimeMs",request="Produce",}[1m]) > 5000
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.app }} 请求在请求队列中等待的时间"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}，请求在请求队列中等待的时间大于5000ms， 当前值为：{{ $value }}"
+  - alert: LocalTimeMs leader处理请求的时间
+    expr: avg_over_time(kafka_network_requestmetrics_throttletimems{name="LocalTimeMs",request="Produce",}[1m])  > 5000
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.app }} leader处理请求的时间"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}, leader处理请求的时间大于5000ms， 当前值为：{{ $value }}"
+  - alert: RemoteTimeMs 请求等待follower的时间
+    expr: avg_over_time(kafka_network_requestmetrics_throttletimems{name="RemoteTimeMs",request="Produce",}[1m]) > 1000
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.app }} 请求等待follower的时间"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}, 请求等待follower的时间大于1000ms， 当前值为：{{ $value }}"
+  - alert: ResponseQueueTimeMs 请求在响应队列中等待的时间
+    expr: avg_over_time(kafka_network_requestmetrics_throttletimems{name="ResponseQueueTimeMs",request="Produce",}[1m]) > 1000
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.app }} 请求在响应队列中等待的时间"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}, 请求在响应队列中等待的时间大于1000ms， 当前值为：{{ $value }}"
+  - alert: ResponseSendTimeMs 发送响应的时间
+    expr: avg_over_time(kafka_network_requestmetrics_throttletimems{name="ResponseSendTimeMs",request="Produce",}[1m]) > 1000
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.app }} 发送响应的时间"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}, 发送响应的时间大于1000ms， 当前值为：{{ $value }}"
+  - alert: MessagesInPerSec 汇总传入消息速率
+    expr:  avg_over_time(kafka_server_brokertopicmetrics_messagesin_total{name="MessagesInPerSec",topic=""}[1m]) > 200000
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.app }} 汇总传入消息速率"
+      description: "app: {{ $labels.app }}, instance：{{ $labels.instance }}, 汇总传入消息速率大于200000 m/s， 当前值为：{{ $value }}"
+
+  - alert: 副本的滞后消息数
+    expr:  sum(kafka_server_replicafetchermanager_failedpartitionscount) by(name) > 500
+    for: 1m
+    labels:
+      job: kafka
+    annotations:
+      summary: "{{ $labels.name }} 副本的滞后消息数"
+      description: "app: {{ $labels.name }}, instance：{{ $labels.instance }}, 副本的滞后消息数大于500， 当前值为：{{ $value }}"

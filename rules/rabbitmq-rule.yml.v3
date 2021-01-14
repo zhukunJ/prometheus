@@ -1,0 +1,132 @@
+groups:
+- name: RabbitmqStatsAlert
+  rules:
+  - alert: rabbitmq_sockets_available
+    expr: rabbitmq_sockets_available < 10240
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }}- {{ $labels.cluster }}: rabbitmq_sockets_available status error, values: {{$value}}"
+      description: "Instance {{ $labels.instance }}- {{ $labels.cluster }}: rabbitmq_sockets_available status error, values: {{$value}}"
+  - alert: rabbitmq_queue_messages_unacked too many
+    expr: sum(rabbitmq_queue_messages_unacked * on(instance) group_left(rabbitmq_cluster) rabbitmq_identity_info{rabbitmq_cluster="$rabbitmq_cluster"}) > 1000
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.cluster }}: rabbitmq_queue_messages_unacked too many, values: {{$value}}"
+      description: "Instance {{ $labels.cluster}}: rabbitmq_queue_messages_unacked too many, values: {{$value}}"
+  - alert: File descriptors available too less
+    expr: (rabbitmq_process_max_fds * on(instance) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster="$rabbitmq_cluster"}) - (rabbitmq_process_open_fds * on(instance) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster="$rabbitmq_cluster"}) < 4096
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.cluster }}: File descriptors available too less, values: {{$value}}"
+      description: "Instance {{ $labels.cluster }}: File descriptors available too less, values: {{$value}}"
+  - alert: TCP sockets available too less
+    expr: (rabbitmq_process_max_tcp_sockets * on(instance) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster="$rabbitmq_cluster"}) - (rabbitmq_process_open_tcp_sockets * on(instance) group_left(rabbitmq_cluster, rabbitmq_node) rabbitmq_identity_info{rabbitmq_cluster="$rabbitmq_cluster"}) < 4096
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.cluster }}:TCP sockets available too less, values: {{$value}}"
+      description: "Instance {{ $labels.cluster }}: TCP sockets available too less, values: {{$value}}"
+  - alert: rabbitmq_sockets_available too less
+    expr: floor(rabbitmq_process_open_tcp_sockets / rabbitmq_process_max_tcp_sockets * 100) > 86
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }}- {{ $labels.cluster }}: rabbitmq_sockets_available too less, values: {{$value}}"
+      description: "Instance {{ $labels.instance }}- {{ $labels.cluster }}: rabbitmq_sockets_available too less, values: {{$value}}"
+  - alert: rabbitmq_queue_messages too many
+    expr: sum by(job) (rabbitmq_queue_messages / 10000) > 2
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }}- {{ $labels.cluster }}: rabbitmq_sockets_available too less, values: {{$value}}"
+      description: "Instance {{ $labels.instance }}- {{ $labels.cluster }}: rabbitmq_sockets_available too less, values: {{$value}}"
+  - alert: RabbitMQ CRM死信队列长度过大
+    expr: rabbitmq_queue_messages{queue=~"crm.*.dlq"} > 10
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      message: "RabbitMQ CRM {$labels.job}}/{{$labels.queue}} 死信队列长度较大, 当前值: {{$value}}"
+
+  - alert: Rabbitmq节点宕机
+    expr: sum(rabbitmq_build_info) < 2
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Rabbitmq node down (instance {{ $labels.instance }})"
+      description: "Less than 2 nodes running in RabbitMQ cluster\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+  - alert: Rabbitmq内存占用高
+    expr: rabbitmq_process_resident_memory_bytes / rabbitmq_resident_memory_limit_bytes * 100 > 90
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Rabbitmq memory high (instance {{ $labels.instance }})"
+      description: "A node use more than 90% of allocated RAM\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }} " 
+
+  - alert: Rabbitmq文件描述符使用过高
+    expr: rabbitmq_process_open_fds / rabbitmq_process_max_fds * 100 > 90
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Rabbitmq file descriptors usage (instance {{ $labels.instance }})"
+      description: "A node use more than 90% of file descriptors\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"  
+  - alert: Rabbitmq连接数过高
+    expr: rabbitmq_connections > 10240
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Rabbitmq too much connections (instance {{ $labels.instance }})"
+      description: "The total connections of a node is too high\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"  
+  - alert: Rabbitmq消息积压过大
+    expr: rabbitmq_queue_messages_ready > 10240
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Rabbitmq too many messages in queue (instance {{ $labels.instance }})"
+      description: "Queue is filling up (> 10240 msgs)\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+  - alert: Rabbitmq出现不可路由消息
+    expr: increase(rabbitmq_channel_messages_unroutable_returned_total[5m]) > 0 or increase(rabbitmq_channel_messages_unroutable_dropped_total[5m]) > 0
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Rabbitmq unroutable messages (instance {{ $labels.instance }})"
+      description: "A queue has unroutable messages\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+  - alert: Rabbitmq erlang 进程数量使用率过大
+    expr: (rabbitmq_erlang_processes_used / rabbitmq_erlang_processes_limit)*100 > 80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Rabbitmq processes_used too many (instance {{ $labels.instance }})"
+      description: "Rabbitmq processes_used too many\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}"
+  - alert: Rabbitmq unacked消息数量过大
+    expr: rabbitmq_channel_messages_unacked > 1024
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "rabbitmq_channel_messages_unacked too many (instance {{ $labels.instance }})"
+      description: "rabbitmq_channel_messages_unacked too many\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}" 
+  - alert: Rabbitmq 磁盘可用空间过低
+    expr: (rabbitmq_disk_space_available_bytes - rabbitmq_disk_space_available_limit_bytes) / 1024 / 1024 / 1024 < 30
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "rabbitmq_disk_space_available too less (instance {{ $labels.instance }})"
+      description: "rabbitmq_disk_space_available too less\n  VALUE = {{ $value }}\n  LABELS: {{ $labels }}" 
