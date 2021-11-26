@@ -1,0 +1,33 @@
+global:
+  resolve_timeout: 1m
+  smtp_smarthost: 'smtp.126.com:465'
+  smtp_from: 'kaikebak8s@126.com'
+  smtp_auth_username: 'kaikebak8s@126.com'
+  smtp_auth_password: 'UTXGEJFQTCJNDAHQ'
+  smtp_require_tls: false
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1m
+  receiver: 'mail'
+  routes:
+  - receiver: 'mailbase'
+    match:
+      app: base
+receivers:
+- name: 'mail'
+  email_configs:
+  - to: 'kaikebak8s@126.com'
+    send_resolved: true
+- name: 'mailbase'
+  email_configs:
+  - to: '377239936@qq.com'
+    send_resolved: true
+inhibit_rules:
+  - source_match:
+      alertname: 'ApplicationDown'
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname',"target","job","instance"]
